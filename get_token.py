@@ -22,7 +22,7 @@ def upload_tokens_to_api(tokens_data):
     """
     Gửi dữ liệu token lên API PHP.
     """
-    api_upload_url = "https://zproject.x10.mx/uptoken.php" # Sử dụng http nếu không có SSL
+    api_upload_url = "https://zproject-api-sever-tele.x10.mx/uptoken.php" # Sử dụng http nếu không có SSL
 
     if not tokens_data:
         print("Không có token nào để tải lên API.")
