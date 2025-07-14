@@ -57,6 +57,7 @@ def background_token_refresher():
         time.sleep(8 * 3600) # Chờ 8 tiếng (8 * 3600 giây)
 
 # Route chính để kiểm tra trạng thái
+# Route chính để kiểm tra trạng thái
 @app.route('/')
 def home():
     with task_status_lock:
@@ -65,7 +66,12 @@ def home():
     # Format the last_run_time if it exists
     last_run_display = "Chưa có"
     if current_status["last_run_time"]:
-        last_run_display = time.strftime('%Y-%m-%d %H:%M:%S', current_status["last_run_time"])
+        # CHỖ NÀY LÀ NGUYÊN NHÂN GÂY LỖI:
+        # last_run_display = time.strftime('%Y-%m-%d %H:%M:%S', current_status["last_run_time"])
+
+        # CÁCH SỬA LỖI: Chuyển timestamp thành struct_time bằng time.localtime()
+        last_run_display = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_status["last_run_time"]))
+
 
     return jsonify({
         "status": "Running",
