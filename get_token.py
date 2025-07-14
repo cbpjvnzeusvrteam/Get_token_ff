@@ -19,12 +19,98 @@ task_status_data = {
 task_status_lock = threading.Lock()
 
 def upload_tokens_to_api(tokens_data):
-    # ... (Your existing code)
-    pass
+    """
+    Gửi dữ liệu token lên API PHP.
+    """
+    api_upload_url = "https://zproject.x10.mx/uptoken.php" # Sử dụng http nếu không có SSL
+
+    if not tokens_data:
+        print("Không có token nào để tải lên API.")
+        return False # Trả về False nếu không có token để upload
+
+    try:
+        # Chuyển đổi dữ liệu token thành chuỗi JSON
+        json_payload = json.dumps(tokens_data, ensure_ascii=False)
+
+        # Gửi POST request với dữ liệu JSON
+        response = requests.post(api_upload_url, data={'tokens': json_payload})
+        response.raise_for_status()  # Ném lỗi nếu status code là lỗi (4xx hoặc 5xx)
+
+        print(f"Phản hồi từ API upload: {response.text}")
+        if "success" in response.text.lower():
+            print("Đã tải token lên API thành công.")
+            return True
+        else:
+            print("API trả về lỗi hoặc không thành công khi tải token.")
+            return False
+
+    except requests.exceptions.RequestException as e:
+        print(f"Lỗi khi gửi dữ liệu lên API upload: {e}")
+        return False
+    except Exception as e:
+        print(f"Lỗi không xác định khi upload token: {e}")
+        return False
 
 def get_tokens_and_upload():
-    # ... (Your existing code)
-    pass
+    """
+    Đọc tài khoản từ accounts.json, lấy token từ API
+    và tải lên API PHP.
+    """
+    accounts_file = 'accounts.json'
+    api_token_generator_url = "https://ff-token-generator.vercel.app/token"
+
+    if not os.path.exists(accounts_file):
+        print(f"Lỗi: Không tìm thấy file '{accounts_file}'. Vui lòng đảm bảo file này nằm cùng thư mục với script.")
+        return []
+
+    try:
+        with open(accounts_file, 'r', encoding='utf-8') as f:
+            accounts = json.load(f)
+    except json.JSONDecodeError:
+        print(f"Lỗi: File '{accounts_file}' không phải là định dạng JSON hợp lệ.")
+        return []
+    except Exception as e:
+        print(f"Lỗi khi đọc file '{accounts_file}': {e}")
+        return []
+
+    tokens_data = []
+    print(f"Đang xử lý {len(accounts)} tài khoản...")
+    for account in accounts:
+        uid = account.get("uid")
+        password = account.get("password")
+
+        if not uid or not password:
+            print(f"Bỏ qua tài khoản không hợp lệ: {account}")
+            continue
+
+        params = {
+            "uid": uid,
+            "password": password
+        }
+
+        try:
+            response = requests.get(api_token_generator_url, params=params)
+            response.raise_for_status()
+            data = response.json()
+            token = data.get("token")
+
+            if token:
+                tokens_data.append({
+                    "uid": uid,
+                    "token": token
+                })
+                print(f"Đã lấy token cho UID: {uid}")
+            else:
+                print(f"Không tìm thấy token trong phản hồi cho UID: {uid}")
+
+        except requests.exceptions.RequestException as e:
+            print(f"Lỗi khi gọi API cho UID {uid}: {e}")
+        except json.JSONDecodeError:
+            print(f"Lỗi: Phản hồi API cho UID {uid} không phải là JSON hợp lệ.")
+        except Exception as e:
+            print(f"Lỗi không xác định khi xử lý UID {uid}: {e}")
+
+    return tokens_data
 
 def background_token_refresher():
     global task_status_data
@@ -51,12 +137,13 @@ def background_token_refresher():
         with task_status_lock:
             task_status_data["status"] = message
             task_status_data["last_run_time"] = current_time
-            task_status_data["next_run_estimate"] = time.strftime('%H:%M:%S', next_run_time)
+            # SỬA LỖI Ở ĐÂY:
+            task_status_data["next_run_estimate"] = time.strftime('%H:%M:%S', time.localtime(next_run_time))
 
-        print(f"--- Kết thúc quá trình. Chờ 8 tiếng để lọc lại token (lần tiếp theo lúc {time.strftime('%Y-%m-%d %H:%M:%S', next_run_time)}) ---")
+        # SỬA LỖI Ở ĐÂY (dòng print):
+        print(f"--- Kết thúc quá trình. Chờ 8 tiếng để lọc lại token (lần tiếp theo lúc {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(next_run_time))}) ---")
         time.sleep(8 * 3600) # Chờ 8 tiếng (8 * 3600 giây)
 
-# Route chính để kiểm tra trạng thái
 # Route chính để kiểm tra trạng thái
 @app.route('/')
 def home():
@@ -114,7 +201,8 @@ def get_tokens_and_upload_single_run():
     with task_status_lock:
         task_status_data["status"] = message
         task_status_data["last_run_time"] = current_time
-        task_status_data["next_run_estimate"] = time.strftime('%H:%M:%S', next_run_time) # Still calculates 8 hours from now
+        # SỬA LỖI Ở ĐÂY:
+        task_status_data["next_run_estimate"] = time.strftime('%H:%M:%S', time.localtime(next_run_time))
 
     print("--- Kết thúc chạy thủ công ---")
 
