@@ -132,16 +132,16 @@ def background_token_refresher():
             message = "Không có token nào được lấy thành công."
 
         current_time = time.time()
-        next_run_time = current_time + 8 * 3600
+        next_run_time_timestamp = current_time + 8 * 3600 # Keep this as timestamp for calculation
 
         with task_status_lock:
             task_status_data["status"] = message
             task_status_data["last_run_time"] = current_time
-            # SỬA LỖI Ở ĐÂY:
-            task_status_data["next_run_estimate"] = time.strftime('%H:%M:%S', time.localtime(next_run_time))
+            # FIX: Ensure time.localtime() is used for next_run_estimate
+            task_status_data["next_run_estimate"] = time.strftime('%H:%M:%S', time.localtime(next_run_time_timestamp))
 
-        # SỬA LỖI Ở ĐÂY (dòng print):
-        print(f"--- Kết thúc quá trình. Chờ 8 tiếng để lọc lại token (lần tiếp theo lúc {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(next_run_time))}) ---")
+        # FIX: Ensure time.localtime() is used for the print statement
+        print(f"--- Kết thúc quá trình. Chờ 8 tiếng để lọc lại token (lần tiếp theo lúc {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(next_run_time_timestamp))}) ---")
         time.sleep(8 * 3600) # Chờ 8 tiếng (8 * 3600 giây)
 
 # Route chính để kiểm tra trạng thái
@@ -153,10 +153,7 @@ def home():
     # Format the last_run_time if it exists
     last_run_display = "Chưa có"
     if current_status["last_run_time"]:
-        # CHỖ NÀY LÀ NGUYÊN NHÂN GÂY LỖI:
-        # last_run_display = time.strftime('%Y-%m-%d %H:%M:%S', current_status["last_run_time"])
-
-        # CÁCH SỬA LỖI: Chuyển timestamp thành struct_time bằng time.localtime()
+        # FIX: Already corrected here, ensuring time.localtime() is used
         last_run_display = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_status["last_run_time"]))
 
 
@@ -196,13 +193,13 @@ def get_tokens_and_upload_single_run():
         message = "Chạy thủ công không có token nào được lấy thành công."
 
     current_time = time.time()
-    next_run_time = current_time + 8 * 3600 # This will be misleading for a manual run but keeps the structure
+    next_run_time_timestamp = current_time + 8 * 3600 # This will be misleading for a manual run but keeps the structure
 
     with task_status_lock:
         task_status_data["status"] = message
         task_status_data["last_run_time"] = current_time
-        # SỬA LỖI Ở ĐÂY:
-        task_status_data["next_run_estimate"] = time.strftime('%H:%M:%S', time.localtime(next_run_time))
+        # FIX: Ensure time.localtime() is used for next_run_estimate
+        task_status_data["next_run_estimate"] = time.strftime('%H:%M:%S', time.localtime(next_run_time_timestamp))
 
     print("--- Kết thúc chạy thủ công ---")
 
